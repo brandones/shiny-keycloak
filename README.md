@@ -29,7 +29,7 @@ So far, I've only gotten KeyCloak to work with dockerized mysql. Getting it to w
                      |              |                                           |
 +--------+           +--------------+                                           |
 |        | https     |              |                                           |
-| Client +---------> | https+portal |                                           |
+| Client +---------> | https-portal |                                           |
 |        |           |              |         +------------+         +-------+  |
 +--------+           +--------------+         |            |         |       |  |
    |--|              |              +-------> | ShinyProxy +-------> | Shiny |  |
