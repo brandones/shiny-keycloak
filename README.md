@@ -2,7 +2,7 @@
 
 I want to use R Shiny to create dashboards to look at health record data from OpenMRS. Don't worry, this tutorial is not specific to OpenMRS. I'll explain how to get R Shiny working with user authentication via ShinyProxy and KeyCloak, all dockerized, all over HTTPS.
 
-### Notate Bene
+#### Notate Bene
 
 We're going to use ShinyProxy with "simple" (insecure) auth available only on the LAN, and set up an instance in the cloud with KeyCloak authentication, with a KeyCloak server we'll also set up in the cloud.
 
@@ -10,7 +10,7 @@ I'm just going to document the fully secured setup -- the insecure setup is a su
 
 So far, I've only gotten KeyCloak to work with dockerized MySQL. Getting it to work with a preexisting MySQL database (such as the one used by OpenMRS) is a TODO.
 
-## Overview
+## The Stack
 
 * [Shiny](https://shiny.rstudio.com/) is an R library for producing webapps
 
