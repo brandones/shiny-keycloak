@@ -1,0 +1,33 @@
+version: '3'
+
+services:
+  https-portal:
+    image: steveltn/https-portal:1
+    ports:
+      - '80:80'
+      - '443:443'                                                                                                         
+    networks:
+      - sp-net                                                                                                            
+    restart: always
+    environment:                                                                                                          
+      DOMAINS: 'sp-keycloak.domain.com -> http://dockerhost:8010, sp.domain.com -> http://dockerhost:8020'  # change 'domain.com' to your domain
+      STAGE: local  # change this to 'production' once you're sure DNS is working
+  keycloak:
+    image: jboss/keycloak
+    ports:
+      - '8010:8080'
+    networks:
+      - sp-net
+    environment:
+      PROXY_ADDRESS_FORWARDING: 'true'
+  shinyproxy:
+    image: shinyproxy
+    ports:
+      - '8020:8080'
+    networks:
+      - sp-net
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+networks:
+  sp-net:
+    external: true

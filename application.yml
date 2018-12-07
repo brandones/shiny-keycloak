@@ -1,0 +1,26 @@
+proxy:
+  port: 8080
+  authentication: keycloak
+  useForwardHeaders: true  # not sure if necessary or not
+  admin-groups: admins
+  keycloak:
+    realm: shinyproxy                                                     
+    auth-server-url: https://sp-keycloak.domain.com/auth
+    resource: shinyproxy                                                  
+    credentials-secret: ****Secret**** # the Keycloak secret for your "client application"
+  docker:
+      internal-networking: true
+  specs:
+  - id: 01_hello
+    display-name: Hello Application
+    description: Application which demonstrates the basics of a Shiny app 
+    container-cmd: ["R", "-e", "shinyproxy::run_01_hello()"]
+    container-image: openanalytics/shinyproxy-demo
+    container-network: sp-net
+  - id: 06_tabsets
+    container-cmd: ["R", "-e", "shinyproxy::run_06_tabsets()"]
+    container-image: openanalytics/shinyproxy-demo
+    container-network: sp-net
+logging:
+  file:
+    shinyproxy.log

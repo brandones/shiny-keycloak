@@ -150,7 +150,7 @@ There's a zillion options! Fortunately we only need a few of them.
 
 ## Configure ShinyProxy to use KeyCloak
 
-We're going to edit ShinyProxy's `application.yml` and rebuild the docker image. With the names I used to configure KeyCloak in the admin console earlier, my `application.yaml` ended up looking like
+We're going to edit ShinyProxy's `application.yml` and rebuild the docker image. With the names I used to configure KeyCloak in the admin console earlier, my `application.yml` ended up looking like
 
 ```
 proxy:
@@ -193,7 +193,7 @@ You should now be able to navigate to `sp.domain.com`, be redirected to `sp-keyc
 
 [Create R Shiny application](https://shiny.rstudio.com/articles/basics.html)
 
-[Package it up](https://www.shinyproxy.io/deploying-apps/), but use `FROM [rocker/r-base:latest](https://github.com/rocker-org/rocker)`
+[Package it up](https://www.shinyproxy.io/deploying-apps/), but use `FROM rocker/r-base:latest` [rocker/r-base:latest](https://github.com/rocker-org/rocker)`
 
 **Hopefully this all works for you!**
 
