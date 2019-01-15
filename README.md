@@ -1,6 +1,6 @@
 # R Shiny with user authentication over HTTPS
 
-I want to use R Shiny to create dashboards to look at health record data from OpenMRS. Don't worry, this tutorial is not specific to OpenMRS. I'll explain how to get R Shiny working with user authentication via ShinyProxy and KeyCloak, all dockerized, all over HTTPS.
+I want to use R Shiny to create dashboards to look at health record data from OpenMRS. This tutorial is not specific to OpenMRS. I'll explain how to get R Shiny working with user authentication via ShinyProxy and KeyCloak, all dockerized, all over HTTPS.
 
 #### Notate Bene
 
@@ -12,7 +12,7 @@ So far, I've only gotten KeyCloak to work with dockerized MySQL. Getting it to w
 
 ## The Stack
 
-* [Shiny](https://shiny.rstudio.com/) is an R library for producing webapps
+* [Shiny](https://shiny.rstudio.com/) is an R library for producing webapps.
 
 * [ShinyProxy](https://www.shinyproxy.io/) is an authorization and orchestration layer. It checks whether a user is authenticated, and if not, sends them to KeyCloak for authentication. It then presents an interface for launching the Shiny apps that the user is authorized to use.
 
@@ -53,25 +53,25 @@ Spin up a server. I'm working on Debain Stretch. I like that it doesn't have the
 
 [Install Docker](https://docs.docker.com/install/linux/docker-ce/ubuntu/)
 
-* Configure daemon to be available at port 2375. Use the snippet from the ShinyProxy instructions, but use `sudo systemctl edit docker.service` to manage the override file.
+Configure daemon to be available at port 2375, refering to the [ShinyProxy instructions](https://www.shinyproxy.io/getting-started/) if the following doesn't work:
 
-* (On Ubuntu 18.04, I had to [disable AppArmor](https://forums.docker.com/t/can-not-stop-docker-container-permission-denied-error/41142/7) because otherwise Docker containers were unkillable. But this will make snaps fail to start. Good luck.)
+* Do `sudo systemctl edit docker.service`
+* Set the file contents to
+```
+[Service]
+ExecStart=
+ExecStart=/usr/bin/dockerd -D -H tcp://127.0.0.1:2375
+```
 
-Add your user to the docker group.
+(On Ubuntu 18.04, I had to [disable AppArmor](https://forums.docker.com/t/can-not-stop-docker-container-permission-denied-error/41142/7) because otherwise Docker containers were unkillable. But this will make snaps fail to start. Good luck.)
 
-`sudo usermod -aG docker $(whoami)`
+Add your user to the docker group: `sudo usermod -aG docker $(whoami)`
 
 [Install Docker Compose](https://docs.docker.com/compose/install/)
 
-Create the network that your docker stuff will operate on:
+Create the network everything will run on: `sudo docker network create sp-net`
 
-`sudo docker network create sp-net`
-
-## ShinyProxy Initial Setup
-
-We're going to build a docker image for ShinyProxy exactly as described [here](https://github.com/openanalytics/shinyproxy-config-examples/tree/master/02-containerized-docker-engine), except that our network is called `sp-net`, and we're going to call our image `shinyproxy` rather than `shinyproxy-example`. Don't worry about the contents of `application.yml` just yet.
-
-## Get Everything Initially Running
+## Get HTTPS-PORTAL and KeyCloak running
 
 You'll need two (sub)domains, one for ShinyProxy and one for KeyCloak. Mine were `sp.domain.com` and `sp-keycloak.domain.com`. Add A records from these (sub)domains to your server's IP address.
 
@@ -81,47 +81,10 @@ Take a look at the [KeyCloak Docker documentation](https://hub.docker.com/r/jbos
 
 (This could probably be integrated into docker-compose as well.)
 
-Create a docker-compose.yml like the following:
+Create a docker-compose.yml like the one in this repository. We don't have the KeyCloak credentials-secret,
+so we'll only start HTTPS-PORTAL and KeyCloak for now: `docker-compose up -d https-portal keycloak`.
 
-```
-version: '3'
-
-services:
-  https-portal:
-    image: steveltn/https-portal:1
-    ports:
-      - '80:80'
-      - '443:443'                                                                                                         
-    networks:
-      - sp-net                                                                                                            
-    restart: always
-    environment:                                                                                                          
-      DOMAINS: 'sp-keycloak.domain.com -> http://dockerhost:8010, sp.domain.com -> http://dockerhost:8020'  # change 'domain.com' to your domain
-      STAGE: local  # change this to 'production' once you're sure DNS is working
-  keycloak:
-    image: jboss/keycloak
-    ports:
-      - '8010:8080'
-    networks:
-      - sp-net
-    environment:
-      PROXY_ADDRESS_FORWARDING: 'true'
-  shinyproxy:
-    image: shinyproxy
-    ports:
-      - '8020:8080'
-    networks:
-      - sp-net
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-networks:
-  sp-net:
-    external: true
-```
-
-And run it with `docker-compose up -d`
-
-This will spin up HTTPS-PORTAL exposed at ports 80 and 443 (make sure your firewall is configured such that these ports are exposed; and that they are the *only* ports exposed), ShinyProxy on localhost:8020, and KeyCloak on localhost:8010. HTTPS-PORTAL will route to either ShinyProxy or KeyCloak depending on the URL at which it is accessed.
+This compose file will spin up HTTPS-PORTAL exposed at ports 80 and 443 (make sure your firewall is configured such that these ports are exposed; and that they are the *only* ports exposed), KeyCloak on `localhost:8010`, and (once it's working) ShinyProxy on `localhost:8020`. HTTPS-PORTAL will route to either ShinyProxy or KeyCloak depending on the URL at which it is accessed.
 
 I wasn't able to get the KeyCloak environment variables for setting database address or database password to work. We need to do so if we want to use an un-dockerized or differently-named MySQL instance (or a different database entirely), or if we want another layer of security in between the system and the data.
 
@@ -131,11 +94,13 @@ Start by creating the initial admin user:
 
 `docker exec $CONTAINER_ID keycloak/bin/add-user-keycloak.sh -u admin -p admin123`
 
+and then restart the container as instructed, with `docker-compose restart`.
+
 KeyCloak wisely disallows admin console access from anywhere outside localhost. So, from your dev machine, open a tunnel:
 
 `ssh -L 4000:localhost:8010 $MY_SERVER`
 
-Navigate to localhost:4000 in your browser and sign in with the initial admin credentials from above.
+Navigate to http://localhost:4000 in your browser and sign in with the initial admin credentials from above.
 
 There's a zillion options! Fortunately we only need a few of them.
 
@@ -152,38 +117,13 @@ There's a zillion options! Fortunately we only need a few of them.
 6. Click the "Credentials" tab in the top tab bar. On this page:
     1. Copy the **Secret**
 
-## Configure ShinyProxy to use KeyCloak
+## ShinyProxy Setup
 
-We're going to edit ShinyProxy's `application.yml` and rebuild the docker image. With the names I used to configure KeyCloak in the admin console earlier, my `application.yml` ended up looking like
+We're going to build a docker image for ShinyProxy much as described [here](https://github.com/openanalytics/shinyproxy-config-examples/tree/master/02-containerized-docker-engine).
 
-```
-proxy:
-  port: 8080
-  authentication: keycloak
-  useForwardHeaders: true  # not sure if necessary or not
-  admin-groups: admins
-  keycloak:
-    realm: shinyproxy                                                     
-    auth-server-url: https://sp-keycloak.domain.com/auth
-    resource: shinyproxy                                                  
-    credentials-secret: ****Secret**** # the secret we copied earlier
-  docker:
-      internal-networking: true
-  specs:
-  - id: 01_hello
-    display-name: Hello Application
-    description: Application which demonstrates the basics of a Shiny app 
-    container-cmd: ["R", "-e", "shinyproxy::run_01_hello()"]
-    container-image: openanalytics/shinyproxy-demo
-    container-network: sp-net
-  - id: 06_tabsets
-    container-cmd: ["R", "-e", "shinyproxy::run_06_tabsets()"]
-    container-image: openanalytics/shinyproxy-demo
-    container-network: sp-net
-logging:
-  file:
-    shinyproxy.log
-```
+Download the Dockerfile in this repo (it should be the same as the [OpenAnalytics one](https://github.com/openanalytics/shinyproxy-config-examples/blob/master/02-containerized-docker-engine/Dockerfile)) as well as the `application.yml` file.
+
+Paste the **Secret** from the KeyCloak Credentials page into the eponymous spot in the `application.yml` file.
 
 Run `docker build . -t shinyproxy` and `docker-compose up -d`.
 
