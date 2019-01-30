@@ -5,13 +5,25 @@ services:
     image: steveltn/https-portal:1
     ports:
       - '80:80'
-      - '443:443'                                                                                                         
+      - '443:443'
     networks:
-      - sp-net                                                                                                            
+      - sp-net
     restart: always
-    environment:                                                                                                          
+    environment:
       DOMAINS: 'sp-keycloak.domain.com -> http://dockerhost:8010, sp.domain.com -> http://dockerhost:8020'  # change 'domain.com' to your domain
       STAGE: local  # change this to 'production' once you're sure DNS is working
+  mysql:
+    restart: always
+    image: mysql:latest
+    environment:
+      MYSQL_ROOT_PASSWORD: CHANGE_ME
+      MYSQL_DATABASE: 'keycloak'
+      MYSQL_USER: 'keycloak'
+      MYSQL_PASS: 'password'
+    networks:
+      - sp-net
+    volumes:
+      - mysql:/var/lib/mysql
   keycloak:
     image: jboss/keycloak
     ports:
