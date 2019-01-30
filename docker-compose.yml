@@ -3,27 +3,27 @@ version: '3'
 services:
   https-portal:
     image: steveltn/https-portal:1
-    ports:
-      - '80:80'
-      - '443:443'
-    networks:
-      - sp-net
     restart: always
     environment:
       DOMAINS: 'sp-keycloak.domain.com -> http://dockerhost:8010, sp.domain.com -> http://dockerhost:8020'  # change 'domain.com' to your domain
       STAGE: local  # change this to 'production' once you're sure DNS is working
-  mysql:
+    networks:
+      - sp-net
+    ports:
+      - '80:80'
+      - '443:443'
+  mariadb:
+    image: mariadb
     restart: always
-    image: mysql:latest
     environment:
       MYSQL_ROOT_PASSWORD: CHANGE_ME
-      MYSQL_DATABASE: 'keycloak'
-      MYSQL_USER: 'keycloak'
-      MYSQL_PASS: 'password'
+      MYSQL_DATABASE: keycloak
+      MYSQL_USER: keycloak
+      MYSQL_PASS: password
     networks:
       - sp-net
     volumes:
-      - mysql:/var/lib/mysql
+      - mariadb:/var/lib/mysql
   keycloak:
     image: jboss/keycloak
     ports:
@@ -31,7 +31,8 @@ services:
     networks:
       - sp-net
     environment:
-      PROXY_ADDRESS_FORWARDING: 'true'
+      PROXY_ADDRESS_FORWARDING: true
+      DB_VENDOR: mariadb
   shinyproxy:
     image: shinyproxy
     ports:
@@ -43,3 +44,6 @@ services:
 networks:
   sp-net:
     external: true
+volumes:
+  mariadb:
+    driver: local
