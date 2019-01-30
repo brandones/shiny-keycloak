@@ -8,7 +8,7 @@ We're going to use ShinyProxy with "simple" (insecure) auth available only on th
 
 I'm just going to document the fully secured setup -- the insecure setup is a subset of the work.
 
-So far, I've only gotten KeyCloak to work with dockerized MySQL. Getting it to work with a preexisting MySQL database (such as the one used by OpenMRS) is a TODO.
+So far, I've only gotten KeyCloak to work with dockerized MariaDB. Getting it to work with un-dockerized MySQL is a to-do.
 
 ## The Stack
 
@@ -18,18 +18,18 @@ So far, I've only gotten KeyCloak to work with dockerized MySQL. Getting it to w
 
 * [KeyCloak](https://www.keycloak.org/) is a crazy powerful user/auth management application, which provides a management console for adding users, a login screen, and a million options.
 
-* [MySQL](https://hub.docker.com/_/mysql/) will hold the user data, but could also be used for other things (e.g. by the Shiny apps).
+* [MariaDB](https://hub.docker.com/_/mariadb/) will hold the user data, but could also be used for other things (e.g. by the Shiny apps).
 
 * [https-portal](https://github.com/SteveLTN/https-portal) will act as a reverse proxy, securing everything over HTTPS. It runs nginx under the hood and uses letsencrypt for TLS certificates.
 
 ```
                      +----------------------------------------------------------+
-                     |                                                 _____    |
-                     | Docker                 +----------+            /     \   |
-                     |                auth    |          |           +       +  |
-                     |              +-------> | KeyCloak +---------> | MySQL |  |
-                     |              |         |          |           +       +  |
-                     |              |         +----------+            \_____/   |
+                     |                                               _______    |
+                     | Docker                 +----------+          /       \   |
+                     |                auth    |          |         +         +  |
+                     |              +-------> | KeyCloak +-------> | MariaDB |  |
+                     |              |         |          |         +         +  |
+                     |              |         +----------+          \_______/   |
                      |              |                                           |
 +--------+           +--------------+                                           |
 |        | https     |              |                                           |
@@ -101,18 +101,21 @@ Create the network everything will run on: `sudo docker network create sp-net`
 
 You'll need two (sub)domains, one for ShinyProxy and one for KeyCloak. Mine were `sp.domain.com` and `sp-keycloak.domain.com`. Add A records from these (sub)domains to your server's IP address.
 
-Take a look at the [KeyCloak Docker documentation](https://hub.docker.com/r/jboss/keycloak/). Get mysql up and running (note that the database name, user name, and password all matter — see note about env vars below):
-
-`docker run --name mysql -d --net sp-net -e MYSQL_DATABASE='keycloak' -e MYSQL_USER='keycloak' -e MYSQL_PASSWORD='password' -e MYSQL_ROOT_PASSWORD="$MYSQL_ROOT_PASS" mysql:5.6`
-
-(This could probably be integrated into docker-compose as well.)
+Take a look at the [KeyCloak Docker documentation](https://hub.docker.com/r/jboss/keycloak/).
 
 Create a docker-compose.yml like the one in this repository. We don't have the KeyCloak credentials-secret,
-so we'll only start HTTPS-PORTAL and KeyCloak for now: `docker-compose up -d https-portal keycloak`.
+so we'll only start HTTPS-PORTAL, MariaDB, and KeyCloak for now: `docker-compose up -d https-portal mariadb keycloak`.
 
-This compose file will spin up HTTPS-PORTAL exposed at ports 80 and 443 (make sure your firewall is configured such that these ports are exposed; and that they are the *only* ports exposed), KeyCloak on `localhost:8010`, and (once it's working) ShinyProxy on `localhost:8020`. HTTPS-PORTAL will route to either ShinyProxy or KeyCloak depending on the URL at which it is accessed.
+This compose file will spin up
+- HTTPS-PORTAL exposed at ports 80 and 443 (make sure your firewall is configured such that these ports are exposed; and that they are the *only* ports exposed)
+- KeyCloak on `localhost:8010`
+- MariaDB (because Docker and MySQL don't get along due to TLS issues)
+- (once it's working) ShinyProxy on `localhost:8020`.
 
-I wasn't able to get the KeyCloak environment variables for setting database address or database password to work. We need to do so if we want to use an un-dockerized or differently-named MySQL instance (or a different database entirely), or if we want another layer of security in between the system and the data.
+HTTPS-PORTAL will route to either ShinyProxy or KeyCloak depending on the URL at which it is accessed.
+
+I wasn't able to get the KeyCloak environment variables for setting database address or database password to work.
+We need to do so if we want to use a different database, or if we want another layer of security in between the system and the data.
 
 ## KeyCloak Setup
 
