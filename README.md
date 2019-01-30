@@ -53,17 +53,43 @@ Spin up a server. I'm working on Debain Stretch. I like that it doesn't have the
 
 [Install Docker](https://docs.docker.com/install/linux/docker-ce/ubuntu/)
 
-Configure daemon to be available at port 2375, refering to the [ShinyProxy instructions](https://www.shinyproxy.io/getting-started/) if the following doesn't work:
+Configure daemon to be available at port 2375. Three ways to try doing this, in order of least likely to screw things up:
 
-* Do `sudo systemctl edit docker.service`
-* Set the file contents to
+1. Create a file `/etc/docker/daemon.json` with the following contents:
+    ```
+    {
+        "hosts": [ "unix://", "tcp://127.0.0.1:2375" ]
+    }
+    ```
+    and do a `sudo systemctl daemon-reload && sudo systemctl restart docker`.
+
+2.
+    Do `sudo systemctl edit docker.service`.
+    Set the file contents to
+    ```
+    [Service]
+    ExecStart=
+    ExecStart=/usr/bin/dockerd -D -H tcp://127.0.0.1:2375
+    ```
+    and do a `sudo systemctl daemon-reload && sudo systemctl restart docker`.
+
+3. Refer to the [ShinyProxy instructions](https://www.shinyproxy.io/getting-started/).
+
+Note that you don't want Docker to yell all-caps security warnings into your syslog, you'll need to
+[enable TLS for the docker daemon](https://docs.docker.com/engine/security/https/). Having gone with
+method (1) (after method (2) caused docker to stop working one day), and
+creating my keys in `/etc/docker/keys/`, my docker config looked like
 ```
-[Service]
-ExecStart=
-ExecStart=/usr/bin/dockerd -D -H tcp://127.0.0.1:2375
+{
+    "hosts": [ "unix://", "tcp://127.0.0.1:2375" ],
+    "tlsverify": true,
+    "tlscert": "/etc/docker/keys/cert.pem",        
+    "tlscacert": "/etc/docker/keys/ca.pem",        
+    "tlskey": "/etc/docker/keys/key.pem"           
+}
 ```
 
-(On Ubuntu 18.04, I had to [disable AppArmor](https://forums.docker.com/t/can-not-stop-docker-container-permission-denied-error/41142/7) because otherwise Docker containers were unkillable. But this will make snaps fail to start. Good luck.)
+On Ubuntu 18.04, I had to [disable AppArmor](https://forums.docker.com/t/can-not-stop-docker-container-permission-denied-error/41142/7) because otherwise Docker containers were unkillable. But this will make snaps fail to start. Good luck.
 
 Add your user to the docker group: `sudo usermod -aG docker $(whoami)`
 
