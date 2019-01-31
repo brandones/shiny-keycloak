@@ -140,8 +140,8 @@ There's a zillion options! Fortunately we only need a few of them.
 3. Click "Clients" in the left sidebar.
 4. Click "Create." Name your client application. I used "shinyproxy" again.
 5. On the main Settings page:
-    1. Turn "Authorization Enabled" ON. (not sure if strictly necessary)
-    2. Add https://sp.domain.com/* to "Valid Redirect URIs" (not sure if strictly necessary)
+    1. Turn "Authorization Enabled" ON.
+    2. Add https://sp.domain.com/* to "Valid Redirect URIs"
     3. Click "Save"
 6. Click the "Credentials" tab in the top tab bar. On this page:
     1. Copy the **Secret**
