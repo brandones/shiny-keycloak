@@ -78,7 +78,9 @@ Configure daemon to be available at port 2375. Three ways to try doing this, in 
 Note that you don't want Docker to yell all-caps security warnings into your syslog, you'll need to
 [enable TLS for the docker daemon](https://docs.docker.com/engine/security/https/). Having gone with
 method (1) (after method (2) caused docker to stop working one day), and
-creating my keys in `/etc/docker/keys/`, my docker config looked like
+creating my keys in `/etc/docker/keys/`, my
+[dockerd config file](https://docs.docker.com/engine/reference/commandline/dockerd/#daemon-configuration-file)
+looked like
 ```
 {
     "hosts": [ "unix://", "tcp://127.0.0.1:2375" ],
